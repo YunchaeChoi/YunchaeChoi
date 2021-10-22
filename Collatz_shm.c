@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/shm.h>
+#include <sys/ipc.c>
 
 int main(int argc, char **argv)
 {
@@ -83,6 +84,7 @@ int main(int argc, char **argv)
 		}
 		printf("\n");
 		shm_unlink(shm);
+		
 		return 0;
 	}
 
