@@ -8,6 +8,7 @@
 
 int main(int argc, char** argv)
 {
+	int i;
 	while(1)
 	{
 		char* line = NULL;
@@ -24,19 +25,43 @@ int main(int argc, char** argv)
 		}
 		if(pid==0)
 		{
-			char** ap, *arg[10];
+			char* token, *arg[10];
 			assert(line!=NULL);
-			for(ap=arg; (*ap=strsep(&line," ")) != NULL;)
-					if(**ap != '\0')
-						if(++ap >= &arg[10])
-							break;
-			*ap=NULL;
+			token = strtok(line, " ");
+			i=0;
+			while(token != NULL)
+			{
+				arg[i] = token;
+				token = strtok(NULL," ");
+				i++;
+			}
+			arg[--i][strlen(arg[i])-1]='\0';
+			arg[++i]=NULL;
+			if(strcmp(arg[0],"exit")==0)
+			{
+				printf("executing exit\n");
+				exit(0);
+			}
+			if(strcmp(arg[0],"cd")==0)
+			{
+				if(chdir(arg[1])==-1)
+				{
+					printf("chdir error\n");
+					exit(1);
+				}	
+			}
+			if(strcmp(arg[0],"path")==0)
+			{
+			}
 			sprintf(path,"/bin/%s",arg[0]);
-			if(access(path,AT_EACCESS)==-1)
+			if(access(path,X_OK)==-1)
 			{
 				sprintf(path,"/usr/bin/%s",arg[0]);
-			}
-			
+				if(access(path,X_OK)==-1)
+				{
+					printf("binary access fail\n");
+				}
+			}	
 			execv(path,arg);
 		}
 		if(pid>0)
