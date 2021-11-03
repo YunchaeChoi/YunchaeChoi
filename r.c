@@ -5,7 +5,7 @@
 
 #define SIZE 15000
 
-typedef char* Data;
+typedef int Data;
 
 typedef struct _node
 {
@@ -98,19 +98,20 @@ int main(int argc, char** argv)
 		{
 			fwrite(line,sizeof(char),nread,stdout);
 		}
-		free(line);
 	}
 	if(argc==2)
 	{
 		fp = fopen(argv[1],"r+");
+		int tmp;
 		while((nread=getline(&line,&len,fp))!=-1)
 		{
-			SPush(&stack, line);
-			printf("%s",top(&stack));
+			tmp = atoi(line);
+			SPush(&stack, tmp);
+			printf("push %d\n",top(&stack));
 		}
 		while(Size(&stack)>0)
 		{
-			printf("%s",SPop(&stack));
+			printf("pop %d\n",SPop(&stack));
 		}
 		free(line);
 		
