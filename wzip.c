@@ -83,36 +83,42 @@ int main(int argc, char** argv)
 
 	}//end of for
 	int sum=0;
-	/*
-	for(int i=0;i<f;i++)
+	int i=0;
+	while(1)
 	{
-		if( i>0 && arr[i].alpha == arr[i-1].alpha )
+		if(sum==0)
 		{
-			while(arr[i].alpha == arr[i-1].alpha)
+			if(i==f-1)
 			{
-				sum += arr[i].num + arr[i-1].num;
-				i++;
-				if( i+1 == f)
-				{
-					fwrite(&sum,sizeof(int),1,stdout);
-					fwrite(&arr[i],alpha,sizeof(char(,1,stdout);
-					break;
-				}
+				sum+= arr[i].num;
+				fwrite(&sum,sizeof(int),1,stdout);
+				fwrite(&arr[i].alpha,sizeof(char),1,stdout);
+				break;
 			}
-			fwrite( &sum, sizeof(int),1,stdout);
-			fwrite(&(arr[i].alpha) ,sizeof(char) , 1, stdout);
+			sum += arr[i].num;
+			i++;
 		}
 		else
 		{
-			fwrite(&(arr[i].num) , sizeof(int), 1, stdout);
-			fwrite(&(arr[i].alpha) , sizeof(char), 1, stdout);
+			if(i==f)
+			{
+				fwrite(&sum,sizeof(int),1,stdout);
+				fwrite(&arr[i].alpha,sizeof(char),1,stdout);
+				break;
+			}
+			if(arr[i].alpha == arr[i-1].alpha)
+			{
+				sum += arr[i].num;
+				i++;
+			}
+			else if(arr[i].alpha != arr[i-1].alpha)
+			{
+				fwrite(&sum, sizeof(int),1,stdout);	
+				fwrite(&(arr[i-1].alpha),sizeof(char),1,stdout);
+				sum=0;
+			}
 		}
-	}
-	*/
-	for(int i=0;i<f;i++)
-	{
-		fwrite(&arr[i].num,sizeof(int),1,stdout);
-		fwrite(&arr[i].alpha,sizeof(char),1,stdout);
-	}
+	} // end of while
+
 	return 0;
 }
