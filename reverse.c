@@ -29,9 +29,8 @@ void StackInit(Stack *s)
 
 void SPush(Stack *s, Data data)
 {
-	Node *newNode = (Node*)malloc(sizeof(Node));
-
-	newNode->data = data;
+	Node *newNode = malloc(sizeof(Node));
+	newNode->data=data;
 	newNode->next = s->top;
 
 	s->top = newNode;
@@ -41,19 +40,17 @@ void SPush(Stack *s, Data data)
 
 Data SPop(Stack *s)
 {
-	Data result;
 	Node *temp;
-
+	Data result;
 	if(SIsEmpty(s))
 	{
-		printf("emtpy pop\n");
 		exit(1);
 	}
-
-	result=s->top->data;
+	
 	temp=s->top;
+	strcpy(result,s->top->data);
 
-	s->top=s->top->next;
+	s->top=temp->next;
 	s->size--;
 
 	free(temp);
@@ -84,9 +81,6 @@ Data top(Stack *s)
 int main(int argc, char** argv)
 {
 	FILE *fp;
-	//FILE *fb; // file buffer
-	//int fd; // file descriptor
-	//char *buffer[SIZE];
 	char *line =NULL;
 	size_t len =0;
 	ssize_t nread;
@@ -102,7 +96,7 @@ int main(int argc, char** argv)
 	}
 	if(argc==2)
 	{
-		fp = fopen(argv[1],"r+");
+		fp = fopen(argv[1],"r");
 		while((nread=getline(&line,&len,fp))!=-1)
 		{
 			SPush(&stack, line);
@@ -110,9 +104,10 @@ int main(int argc, char** argv)
 		}
 		while(Size(&stack)>0)
 		{
-			printf("%s",SPop(&stack));
+			printf("%s\n",SPop(&stack));
 		}
 		free(line);
+		fclose(fp);
 		
 	}
 }
