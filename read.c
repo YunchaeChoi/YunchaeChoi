@@ -9,11 +9,10 @@ int main(int argc, char** argv)
 	while(1)
 	{
 		if(fread(&data,sizeof(int),1,fw) == 0 ) break;
-		printf("%d",data);
+			printf("%d",data);
 		if(fread(&c,sizeof(char),1,fw) == 0 ) break;
-		printf("%c",c);
+			printf("%c",c);
 	}
-	printf("\n");
 	fclose(fw);
 	return 0;
 }
