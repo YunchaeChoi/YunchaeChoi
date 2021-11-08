@@ -30,7 +30,7 @@ void StackInit(Stack *s)
 void SPush(Stack *s, Data data)
 {
 	Node *newNode = malloc(sizeof(Node));
-	newNode->data=data;
+	strcpy(newNode->data,data);
 	newNode->next = s->top;
 
 	s->top = newNode;
@@ -45,8 +45,7 @@ Data SPop(Stack *s)
 	if(SIsEmpty(s))
 	{
 		exit(1);
-	}
-	
+	}	
 	temp=s->top;
 	strcpy(result,s->top->data);
 
@@ -108,6 +107,5 @@ int main(int argc, char** argv)
 		}
 		free(line);
 		fclose(fp);
-		
 	}
 }
