@@ -30,7 +30,18 @@ void StackInit(Stack *s)
 void SPush(Stack *s, Data data)
 {
 	Node *newNode = malloc(sizeof(Node));
-	strcpy(newNode->data,data);
+	if(newNode==NULL)
+	{
+		fprintf(stderr,"malloc failed\n");
+		exit(1);
+	}
+	newNode->data = malloc(sizeof(data)/sizeof(char));
+	if(newNode->data==NULL)
+	{
+		fprintf(stderr,"malloc failed\n");
+		exit(1);
+	}
+	strcpy(newNode->data, data);
 	newNode->next = s->top;
 
 	s->top = newNode;
@@ -38,22 +49,21 @@ void SPush(Stack *s, Data data)
 
 }
 
-Data SPop(Stack *s)
+void SPop(Stack *s,FILE *out)
 {
 	Node *temp;
-	Data result;
 	if(SIsEmpty(s))
 	{
 		exit(1);
 	}	
 	temp=s->top;
-	strcpy(result,s->top->data);
+	
+	fprintf(out,"%s", s->top->data);
 
 	s->top=temp->next;
 	s->size--;
 
 	free(temp);
-	return result;
 }
 
 int Size(Stack *s)
@@ -89,23 +99,101 @@ int main(int argc, char** argv)
 	{
 		while((nread=getline(&line,&len,stdin)!=-1))
 		{
-			fwrite(line,sizeof(char),nread,stdout);
+			SPush(&stack, line);
+
 		}
+		while(Size(&stack)>0)
+			SPop(&stack,stdout);
 		free(line);
 	}
 	if(argc==2)
 	{
 		fp = fopen(argv[1],"r");
+		char path[255];
+		
+		sprintf(path,"reverse: cannot open file '%s'\n",argv[1]);
+		if(fp==NULL)
+		{
+			fprintf(stderr,"%s",path);
+			exit(1);
+		}
 		while((nread=getline(&line,&len,fp))!=-1)
 		{
 			SPush(&stack, line);
-			printf("%s",top(&stack));
 		}
 		while(Size(&stack)>0)
 		{
-			printf("%s\n",SPop(&stack));
+			SPop(&stack, stdout);
 		}
 		free(line);
 		fclose(fp);
 	}
+	if(argc==3)
+	{
+		char path[255];
+		
+		sprintf(path,"reverse: cannot open file '%s'\n",argv[1]);
+		fp = fopen(argv[1],"r");
+	
+	
+
+		if(fp==NULL)
+		{
+			fprintf(stderr,path);
+			exit(1);
+		}
+		if(strcmp(argv[1],argv[2])==0)
+		{
+			fprintf(stderr,"%s","reverse: input and output file must differ\n");
+			exit(1);
+		}
+		
+
+		if(strstr(argv[1],"/")!=NULL && strstr(argv[2],"/")!=NULL)
+		{
+			char* temp1;
+			char* temp2;
+			temp1 = malloc(sizeof(argv[1])/sizeof(char));
+			temp2 = malloc(sizeof(argv[2])/sizeof(char));
+
+			strcpy(temp1,argv[1]);
+			strcpy(temp2,argv[2]);
+			char* ptr1 = strtok(temp1,"/");
+			ptr1=strtok(NULL,"/");
+			char* ptr2 = strtok(temp2,"/");
+			ptr2 = strtok(NULL,"/");
+			
+
+			if(strcmp(ptr1,ptr2)==0)
+			{
+				free(temp1);
+				free(temp2);
+				fprintf(stderr,"%s","reverse: input and output file must differ\n");
+				exit(1);
+			}
+			
+
+		}
+		FILE* fw;
+		fw = fopen(argv[2],"w+");
+		while((nread=getline(&line,&len,fp))!=-1)
+		{
+			SPush(&stack,line);
+		}
+		while(Size(&stack)>0)
+		{
+			SPop(&stack,fw);
+		}
+		fclose(fp);
+		fclose(fw);
+
+
+	}
+	if(argc>3)
+	{
+		fprintf(stderr,"usage: reverse <input> <output>\n");
+		exit(1);
+	}
+
+	return 0;
 }
