@@ -38,6 +38,8 @@ int main(int argc, char** argv)
 			exit(1);
 		}
 
+		setenv("PATH", "/bin",1);
+
 
 		char* line = NULL;
 		int status; // for wait
@@ -57,7 +59,6 @@ int main(int argc, char** argv)
 			if(pid<0)
 			{
 				print_err(); // fork fail
-				exit(1);
 			}
 			if(pid==0)
 			{
@@ -70,8 +71,8 @@ int main(int argc, char** argv)
 				{
 					arg[i]=token;
 					token=strtok(NULL, " ");
-					i++; // after while loop, (i+1) equals the number of components in arg.
-				}            // arg[0] = command. (e.g., "cd" )
+					i++;		 // after while loop, i equals the number of components in arg.
+				}            		// arg[0] = command. (e.g., "cd" )
 				int j=i-1;
 				arg[j][strlen(arg[j])-1]='\0';
 				arg[i]=NULL;
@@ -79,44 +80,55 @@ int main(int argc, char** argv)
 				{
 					if(i==1)
 					{
-						if(chdir(getenv("HOME"))==-1)
-						{
-							print_err();
-							exit(1);
-						}
+						print_err();  
 					}
-					else
+					if(i>2)
+					{
+						print_err();
+					}
+					else if(i==2)
 					{
 						if(strcmp(arg[1],"~")==0)
 						{
 							if(chdir(getenv("HOME"))==-1)
 							{
 								print_err();
-								exit(1);
 							}
 						}
 						else
 						{
 							if(chdir(arg[1])==-1)
 							{
-								print_err();
-								exit(1);
+								print_err(); 
 							}
 						}
 					}
 				}
-				/*
+				
 				if(strcmp(arg[0],"path")==0)
 				{
-						
+					if(i==1) //command 'path' is passed with 0 argument.
+					{
+						setenv("PATH","",1);
+					}
+					else if(i>1)
+					{
+						char new_path[255];
+						new_path[0]='\0';
+						for(int y=0;y<i-1;y++)
+						{
+							if(y>0)
+								strcat(new_path,":");
+							strcat(new_path,argv[y+1]);
+						}
+						setenv("PATH",new_path,1);
+					}
 				}
-				*/
 				if(strcmp(arg[0],"exit")==0)
 				{
 					if(i>1) // one or more arguments passed to exit, error
 					{
 						print_err();
-						exit(1);
 					}
 
 					flag=0;
@@ -127,7 +139,7 @@ int main(int argc, char** argv)
 				}
 
 							
-				if(strcmp(arg[0],"cd")!=0 && strcmp(arg[0],"exit")!=0 && strcmp(arg[0],"path")!=0 )
+				if(strcmp(arg[0],"cd")!=0 && strcmp(arg[0],"exit")!=0 && strcmp(arg[0],"path")!=0)
 				{
 					sprintf(path,"/bin/%s",arg[0]);
 					if(access(path,X_OK)==-1)
@@ -136,25 +148,25 @@ int main(int argc, char** argv)
 						if(access(path,X_OK)==-1)
 						{
 							print_err(); // binary access fail
-							exit(1);
+							//printf("%d\n",2);
 						}
 					}
 					execv(path,arg);
+					printf("This shouldn't be printed\n");
 				}
-				
 			}
 			if(pid>0)
 			{
-				flag=1;
 				wait(&status);
 				close(fd[1]);
 				read(fd[0],&flag,sizeof(flag));
 				close(fd[0]);
 				if(flag==0)	exit(0);
-				free(line);
+				//free(line);
 			}
 
 		}
+		free(line);
 		
 
 	} // end of if(argc>1)
@@ -267,7 +279,7 @@ int main(int argc, char** argv)
 				read(fd[0],&flag,sizeof(flag));
 				close(fd[0]);
 				if(flag==0)	exit(0);
-				free(line);
+				//free(line);
 			}
 			
 			
