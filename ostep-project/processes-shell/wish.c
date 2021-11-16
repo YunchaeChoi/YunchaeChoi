@@ -25,7 +25,7 @@ void make_token(char* line,char* arg[10], int* i)
 	i=0;
 	while(token)
 	{
-		arg[*i]=token;
+		arg[i]=token;
 		token=strtok(NULL, " ");
 		i++;
 	}
