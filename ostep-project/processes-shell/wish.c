@@ -9,10 +9,32 @@
 
 char error_message[30] = "An error has occurred\n"; // one and only error message
 
+char *paths[256] = {"/bin",NULL};
+
 void print_err() // print error message
 {
 	write(STDERR_FILENO, error_message, strlen(error_message));
 }
+
+/*
+void make_token(char* line,char* arg[10], int* i)
+{
+	char* token;
+	assert(line!=NULL);
+	token = strtok(line, " ");
+	i=0;
+	while(token)
+	{
+		arg[*i]=token;
+		token=strtok(NULL, " ");
+		i++;
+	}
+	j=i-1;
+	arg[j][strlen(arg[j])-1]='\0';
+	arg[*i]=NULL;
+
+}
+*/
 
 int main(int argc, char** argv)
 {
@@ -38,13 +60,11 @@ int main(int argc, char** argv)
 			exit(1);
 		}
 
-		setenv("PATH", "/bin",1);
 
 		char* line = NULL;
 		int status; // for wait
 		size_t linecap;
 		ssize_t nread;
-		char path[30];
 		while(1)
 		{
 			if((nread=getline(&line,&linecap,fp))==-1) // EOF. means that the last line of argv[1] is not "exit"
@@ -95,24 +115,12 @@ int main(int argc, char** argv)
 				continue;
 			}
 			if(strcmp(arg[0],"path")==0)
-			{
-				if(i==1) //command 'path' is passed with 0 argument.
-				{
-					setenv("PATH","",1);
-				}
-				else if(i>1)
-				{
-					char new_path[255];
-					memset(new_path,0,sizeof(new_path));
-					for(int y=0;y<i-1;y++)
-					{
-						if(y>0)
-							strcat(new_path,":");
-						strcat(new_path,arg[y+1]);
-					}
-					setenv("PATH",new_path,1);
-				}
-				//printf("revised path: %s\n",getenv("PATH"));
+			{	
+				ssize_t a=0;
+				paths[0]=NULL;
+				for(;a<i-1;a++)
+					paths[a] = strdup(arg[a+1]);
+				paths[a+1] = NULL;
 				continue;
 			}
 			if(strcmp(arg[0],"exit")==0)
@@ -130,48 +138,99 @@ int main(int argc, char** argv)
 			if(pid<0)
 			{
 				print_err(); // fork fail
-				printf("fork fail\n");
 			}
 			if(pid==0)
 			{
 				//printf("child: my pid is... %d\n",getpid());
-				if(strstr(arg[0],".sh")!=NULL) // if arg[0] contains ".sh"
+				char path[256];
+				int paths_idx=0;
+				while(paths[paths_idx] !=NULL)
 				{
-					strcpy(path,getenv("PATH"));
-					strcat(path,"/");
-					strcat(path,arg[0]);
-					/*
-					if(access(path,X_OK)==-1)
-					{
-						if(access(path,X_OK)==-1)
-						{
-							print_err(); // binary access fail
-							_exit(status);
-						}
-					}
-					*/
-					execv(path,arg);
+					sprintf(path,"%s/%s", paths[paths_idx++], arg[0]);
+					if(access(path,X_OK)==0) break;
 				}
-				sprintf(path,"/bin/%s",arg[0]);
 				if(access(path,X_OK)==-1)
 				{
-					sprintf(path,"/usr/bin/%s",arg[0]);
-					if(access(path,X_OK)==-1)
+					print_err(); // binary access fail
+					_exit(status);
+				}
+				int check_redirect=0;
+				int is_redirect=0; // is_redirect==1 means redirect.
+				for(;check_redirect<i;check_redirect++)
+				{
+					if(strstr(arg[check_redirect],">")!=NULL)
 					{
-						print_err(); // binary access fail
-						_exit(status);
+						is_redirect=1;
+						break;
 					}
 				}
-				else
-					execv(path,arg);
-				//printf("execv... \n");
-					//printf("execv error\n");
+				if(is_redirect) // redirect to some file, or buffer. Not stdout.
+				{
+					if(strcmp(arg[check_redirect],">")==0) // if arg[check_redirect] is only ">", not something like "tests>/tmp/output".
+					{
+						if(check_redirect+1==i) // redirect, bot no output file
+						{
+							print_err();
+							_exit(status);
+						}
+						int fd = open(arg[++check_redirect], O_WRONLY | O_CREAT, 0666);
+						dup2(fd,1); // make stdout go to file
+						//dup2(fd,2); // make stderr go to file (maybe I don't have to do this?)
+						close(fd);
+						
+						if(check_redirect+1<i) // redirect, but two output. Or, two redirection
+						{
+							print_err();
+							_exit(status);
+						}
+
+					}
+					else // arg[check_redirect] is something like "tests/p2a-test>/tmp/output.11" or "tests/p2a-test>" or "ls>output"
+					{
+						//-------------make token-------------//
+
+						char* token_rd; // token for redirect
+						char* arg_rd[10];
+						assert(arg[check_redirect]!=NULL);
+						token_rd = strtok(arg[check_redirect], " ");
+						int i_rd=0;
+						while(token_rd)
+						{
+							arg_rd[i]=token_rd;
+							token_rd=strtok(NULL, " ");
+							i_rd++;
+						}
+						int j_rd=i_rd-1;
+						arg_rd[j_rd][strlen(arg[j])-1]='\0';
+						arg_rd[i_rd]=NULL;
+
+						//-------------make token----------//
+						
+
+
+					}
+
+					if(check_redirect+1==i) // redirect, but no output file defined.
+					{
+						print_err();
+						_exit(status);
+					}
+
+					if(check_redirect+1 < i ) // redirect, but two output
+					{
+						print_err();
+						_exit(status);
+					}
+					arg[--check_redirect]=NULL;
+
+				}
+				execv(path,arg);
 				printf("This shouldn't be printed\n");
 			}
 			if(pid>0)
 			{
+				//printf("parent: I'm parent of... %\n", pid);
 				wait(&status);
-				//printf("parent: I'm parent of... %d\n",pid);
 			}
 
 		}
@@ -190,11 +249,8 @@ int main(int argc, char** argv)
 			printf("wish> ");
 			getline(&line,&linecap,stdin);
 			
-			int fd[2];
-			pipe(fd);
 
 			pid_t pid = fork();
-			if(pid<0)
 			{
 				printf("fork failed!\n");
 				exit(1);
@@ -260,9 +316,6 @@ int main(int argc, char** argv)
 					}
 				
 					flag=0;
-					close(fd[0]);
-					write(fd[1],&flag,sizeof(flag));
-					close(fd[1]);
 					exit(0);
 				}
 				sprintf(path,"/bin/%s",arg[0]);
@@ -280,9 +333,6 @@ int main(int argc, char** argv)
 			{
 				flag=1;
 				wait(&status);
-				close(fd[1]);
-				read(fd[0],&flag,sizeof(flag));
-				close(fd[0]);
 				if(flag==0)	exit(0);
 				//free(line);
 			}
