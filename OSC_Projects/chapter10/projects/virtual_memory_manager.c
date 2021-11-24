@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <errno.h>
 
-#define OFFSET_MASK 0xff
-#define PGN_MASK 0xff
+#define OFFSET_MASK 0xFF
+#define PGN_MASK 0xFF
 #define PAGE_NUM_MASK
 
 #define SHOW(T,V) do { T x = V; print_bits(#T, #V, (unsigned char*) &x, sizeof(x));  } while(0)
