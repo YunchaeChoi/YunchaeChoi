@@ -35,5 +35,4 @@ unsigned char extract_remain_bits(int logical_address)
     return (logical_address & REMAIN_BITS_MASK)>>16;
 }
 
-
 #endif
