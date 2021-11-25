@@ -1,6 +1,16 @@
-Virtual_Memory_Manager:virtual_memory_manager.c
-	gcc -o Virtual_Memory_Manager virtual_memory_manager.o -Wall -Werror
-virtual_memory_manager.o:virtual_memory_manager.c
-	gcc -c virtual_memory_manager.c
+CC = gcc
+TARGET = Virtual_Memory_Manager
+OBJS = virtual_memory_manager.o
+
+CFLAGS = -Wall -Werror
+
+all : $(TARGET)
+
+$(TARGET) : $(OBJS)
+	$(CC) -o $@ $^
+
+.c.o:
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 clean:
-	rm Virtual_Memory_Manager virtual_memory_manager.o
+	rm $(TARGET) $(OBJS)

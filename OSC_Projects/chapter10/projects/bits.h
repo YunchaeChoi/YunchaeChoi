@@ -1,7 +1,8 @@
-#ifndef __show_bits
-#define __show_bits
+#ifndef __bits
+#define __bits
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <stdint.h>
 #include <errno.h>
@@ -10,11 +11,13 @@
 
 #define OFFSET_MASK 0xFF
 #define PGN_MASK 0xFF00 // page number mask
+#define REMAIN_BITS_MASK 0xFFFF0000
 
-#define TLB_EMPTY -1 // because TLB entries are consisted of page and frame number, cannot be -1
 
 unsigned char extract_offset(int logical_address);
 unsigned char extract_page_number(int logical_address);
+unsigned char extract_remain_bits(int logical_address);
+
 
 unsigned char extract_offset(int logical_address)
 {
@@ -26,5 +29,11 @@ unsigned char extract_page_number(int logical_address)
 {
     return (logical_address & PGN_MASK)>>8;
 }
+
+unsigned char extract_remain_bits(int logical_address)
+{
+    return (logical_address & REMAIN_BITS_MASK)>>16;
+}
+
 
 #endif
