@@ -19,6 +19,7 @@
 #define TRUE 1
 #define FALSE 0
 
+
 /* struct */
 
 typedef struct _MemBlock
@@ -28,11 +29,14 @@ typedef struct _MemBlock
 	struct _MemBlock *prev, *next;
 } MemBlock;
 
+
 /* functions */
 
 void tok(char* line, char* arg[10], int* an); //to make token ( seperate line from getline )
 
 MemBlock *make_block(size_t lo, size_t hi, char* process, MemBlock *prev, MemBlock *next);
+
+void initialize_memory();
 
 int request_memory(char* process,size_t bytes,char strategy);
 
@@ -48,18 +52,26 @@ MemBlock* find_head_free();
 
 MemBlock* find_proc();
 
-/* global variables */
+void merge_free_blocks(MemBlock* block,MemBlock* block_merge); // two blocks must be free(not allocated), and not have a name(process), not be NULL
 
-size_t mem_size=0;  // must be initialized to (size_t)argv[1]
+void swap_blocks(MemBlock* head, MemBlock* proc);
+
+
+/* global variables */
+size_t mem_size;  // must be initialized to (size_t)argv[1]
 MemBlock *mem;
 
 int 
 main(int argc, char* argv[])
 {
-	if(argc==1 || argc>2) exit(EXIT_FAILURE); // need one argument when executing this code
+	if(argc==1 || argc>2)
+    {
+        printf("not a correct number of arguments\n");
+        exit(EXIT_FAILURE);
+    }
 
 	sscanf(argv[1], "%zu" , &mem_size); // %zu is used especially for size_t.
-	mem = make_block(0, mem_size-1,"",NULL,NULL); // initializes memory
+    initialize_memory();
 
 	/* variables */
 	char* line =NULL;
@@ -166,6 +178,11 @@ MemBlock *make_block(size_t lo, size_t hi, char* process, MemBlock *prev, MemBlo
 	return ret;
 }
 
+void initialize_memory()
+{
+    mem = make_block(0, mem_size-1,"",NULL,NULL);
+}
+
 size_t block_size(MemBlock* hole)
 {
     return hole->hi - hole->lo +1 ;
@@ -180,7 +197,7 @@ int request_memory(char* process, size_t bytes, char strategy) // RQ P0 40000 W
 			{
 				while(hole)
 				{
-					if(hole->process==NULL && hole->hi - hole->lo +1 >= bytes) // free block big enough to fit requsted memory
+					if(hole->process==NULL && block_size(hole) >= bytes) // free block big enough to fit requsted memory
 					{
 						break;
 					}
@@ -193,9 +210,9 @@ int request_memory(char* process, size_t bytes, char strategy) // RQ P0 40000 W
 				MemBlock *cursor= mem;
 				while(cursor)
 				{
-                    if(cursor->hi-cursor->lo+1 >= bytes)
+                    if(block_size(cursor) >= bytes)
                     {
-                        if(cursor->hi-cursor->lo+1 > hole->hi-hole->lo+1 && cursor->process==NULL)
+                        if(block_size(cursor) > block_size(hole) && cursor->process==NULL)
                         {
                             hole = cursor;
                         }
@@ -209,9 +226,9 @@ int request_memory(char* process, size_t bytes, char strategy) // RQ P0 40000 W
 				MemBlock *cursor= mem;
 				while(cursor)
 				{
-					if(cursor->hi-cursor->lo+1 >= bytes)
+					if(block_size(cursor) >= bytes)
                     {
-                        if(cursor->hi-cursor->lo+1 < hole->hi-hole->lo+1 && cursor->process==NULL)
+                        if(block_size(cursor)< block_size(hole) && cursor->process==NULL)
                         {
                             hole = cursor;
                         }
@@ -245,76 +262,119 @@ int request_memory(char* process, size_t bytes, char strategy) // RQ P0 40000 W
 
 MemBlock* find_head_free() // find lowest memory(address) of free block
 {
+    int free_flag=0; // set to 1 if at least one free memory block exists in the memory
     MemBlock* ret=mem;
     while(ret)
     {
         if(ret->process==NULL)
+        {
+            free_flag=1;
             break;
+        }
         ret=ret->next;
     }
-    return ret;
+    if(free_flag)
+        return ret;
+    else
+        return NULL;
 }
 
 MemBlock* find_proc()
 {
+    int proc_flag=0; // set to 1 if at least one process exists in the memory
     MemBlock* ret=mem;
     while(ret)
     {
         if(ret->process)
+        {
+            proc_flag=1;
             break;
+        }
         ret=ret->next;
     }
-    return ret;
+    if(proc_flag)
+        return ret;
+    else
+        return NULL;
+}
+
+void merge_free_blocks(MemBlock* block,MemBlock* block_merge) // two blocks must be free(not allocated), and not have a name(process), not be NULL
+{                                                        // block_merge will be merged into block
+    if(block->next==block_merge)
+    {
+        block->hi=block_merge->hi;
+        block->next=block_merge->next;
+        free(block_merge);
+    }
+}
+
+void swap_blocks(MemBlock* head, MemBlock* proc) // swap two blocks 
+{
+    /* head means free block and proc means existing memory allocated to a certain process */
+    if(head->next==proc)
+    {    
+        head->process=malloc(sizeof(char)*(strlen(proc->process)+1));
+        strcpy(head->process,proc->process);
+
+        free(proc->process);
+        proc->process=NULL;
+        
+        size_t proc_size = block_size(proc);
+        size_t head_size = block_size(head);
+
+        SWAP(head->lo,proc->lo); //swap starting address ( head, proc )
+
+        proc->hi = proc_size +proc->lo -1;
+        head->hi = head_size +head->lo -1;
+
+        head->prev=proc;
+        head->next=proc->next;
+
+        if(proc->next)
+        {
+            proc->next->prev=head;
+        }
+
+        proc->next=head;
+        proc->prev=head->prev;
+        if(head->prev)
+        {
+            head->prev->next=proc;
+        }
+        if(proc->next && proc->process==NULL && proc->next->process==NULL) // merge two free block
+        {
+            merge_free_blocks(proc,proc->next);
+        }
+    }
+    
 }
 
 
 void compact_memory() // will move all existing processes to low memory
 {
     MemBlock* proc; // existing memory allocated to a process
-    MemBlock* head;
+    MemBlock* head; // lowest address of free memory block
 
     do
     {
         proc=find_proc();
         head=find_head_free();
 
-        if(head->next==proc)
-        {    
-            head->process=malloc(sizeof(char)*(strlen(proc->process)+1));
-            strcpy(head->process,proc->process);
-
-            free(proc->process);
-            proc->process=NULL;
-            
-            size_t proc_size = block_size(proc);
-            size_t head_size = block_size(head);
-
-            SWAP(head->lo,proc->lo); //swap starting address ( head, proc )
-
-            proc->hi = proc_size +proc->lo -1;
-            head->hi = head_size +head->lo -1;
-
-            head->prev=proc;
-            head->next=proc->next;
-            if(proc->next)
-            {
-                proc->next->prev=head;
-            }
-
-            proc->next=head;
-            proc->prev=head->prev;
-            if(head->prev)
-            {
-                head->prev->next=proc;
-            }
-        }
-
-        if(proc->next && proc->process==NULL && proc->next->process==NULL) // merge two free block
+        if(proc==NULL || head==NULL)
         {
-            proc->hi=proc->next->hi;
-            proc->next=proc->next->next;
-            free(proc->next);
+            if(proc==NULL)
+            {
+                printf("there is no currently running process.\n");
+                return;
+            }
+            else
+            {
+                printf("there is no free memory to compact\n");
+                return;
+            }
         }
+        swap_blocks(head,proc); // swap free block and existing process
+
     }while(head->next);
 }
 
