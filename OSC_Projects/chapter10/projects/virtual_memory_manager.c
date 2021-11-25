@@ -1,51 +1,84 @@
+/*
+ * We need, 
+ * 1. 2^8 entreis in the page table
+ * 2. Page size of 2^8 bytes
+ * 3. 16 entries in the TLB
+ * 4. Frame size of 2^8 bytes
+ * 5. 256 frames
+ * 6. Physical memory of 65,636(2^16) bytes (256 frames * 256-byte frame size)
+*/
+
+#include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <stdint.h>
 #include <errno.h>
+#include "show_bits.h"
 
-#define OFFSET_MASK 0xFF
-#define PGN_MASK 0xFF
-#define PAGE_NUM_MASK
+#define TRUE 1
+#define FALSE 0
 
-#define SHOW(T,V) do { T x = V; print_bits(#T, #V, (unsigned char*) &x, sizeof(x));  } while(0)
+typedef struct _tlb
+{
+    unsigned char page_num;
+    unsigned char frame_num;
+}tlb;
 
-typedef unsigned char bit;
+/* global variables */
+tlb TLB[16]; // TLB with 16 entries
+tlb_pointer TLB_pointer[16];
+unsigned char page_table[256]; // page table with 2^8 entries
+
 
 /* fucntions */
-bit extract_offset(int logical_address);
-bit extract_page_number(int logical_address);
 
-void print_byte_as_bits(char val);
-void print_bits(char * ty, char * val, unsigned char * bytes, size_t num_bytes);
+void intialize_TLB();
+void TLB_hit();
+tlb TLB_search(unsigned char page_num);
+void calculate_phsysical_memory(tlb *ptr, unsigned char offset);
 
-int main()
+int main(int argc, char* argv[])
 {
-    SHOW(int, 17);
-    SHOW(int,256);
+    char *str_ptr;
+    int logic_addr; // logical address
+    logic_addr=(int)strtol(argv[1],&str_ptr,10);
+
+
+
+    printf("page num: %#x\n",extract_page_number(logic_addr));
+    printf("offset: %#x\n",extract_offset(logic_addr));
 }
 
 
-bit extract_offset(int logical_address)
+void intialize_TLB()
 {
-    return (logical_address && OFFSET_MASK);
+    for(int i=0;i<16;i++)
+    {
+        TLB[i]->page_num=TLB_EMPTY;
+        TLB[i]->frame_num=TLB_EMPTY;
+    }
 }
 
-bit extract_page_number(int logical_address)
+tlb* TLB_search(unsigned char page_num)
 {
-    return (logical_address>>2) && PGN_MASK; 
+    for(int i=0;i<16;i++)
+    {
+        if(TLB[i]->page_num == page_num) 
+        {
+            tlb *ptr = malloc(sizeof(tlb));
+            ptr = TLB[i];
+            return ptr;
+        }
+    }
+    return NULL;
 }
 
-void print_byte_as_bits(char val) {
-  for (int i = 7; 0 <= i; i--) {
-    printf("%c", (val & (1 << i)) ? '1' : '0');
-  }
+void calculate_phsysical_memory(tlb *ptr, unsigned char offset) // if TLB_search(val)!=NULL means, TLB hit
+{
+
 }
 
-void print_bits(char * ty, char * val, unsigned char * bytes, size_t num_bytes) {
-  printf("(%*s) %*s = [ ", 15, ty, 16, val);
-  for (size_t i = 0; i < num_bytes; i++) {
-    print_byte_as_bits(bytes[i]);
-    printf(" ");
-  }
-  printf("]\n");
+void demand_paging()
+{
+
 }
