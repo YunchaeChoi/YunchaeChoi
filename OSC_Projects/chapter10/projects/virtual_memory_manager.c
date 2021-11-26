@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "bits.h"
+#include "doubly_linked_stack.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -50,9 +51,10 @@
 
 typedef struct _tlb
 {
-    int is_set; // TLB_EMPTY or TLB_SET
+    int is_set; // TLB_EMPTY or TLB_SET // may have to rename it to valid bit. not sure
     unsigned char page_num;
     unsigned char frame_num;
+    int access_bit; // reference bit. useful in page replacement policy
 }tlb;
 
 typedef struct _PAGE_TABLE
@@ -89,6 +91,10 @@ void TLB_update(unsigned char page_num, unsigned char frame_num);
 
 int TLB_look_up(unsigned char page_num);
 
+void page_replacement_FIFO();
+
+void page_replacement_LRU();
+
 
 /* main */
 
@@ -98,7 +104,10 @@ int main(int argc, char* argv[])
     char* input_address;
     char address_buffer[7];
     int logic_addr;     // logical address
-    
+
+	LinkedListStack* stack; // LRU using stack. check OSC page 520.
+	stack = stack_init();
+
     FILE* fp;
     if( (fp=fopen(argv[1],"r"))==NULL )
     {
@@ -147,7 +156,13 @@ unsigned char VPN_to_PFN(unsigned char page_num) // if TLB miss. check page tabl
     }
     return page_table[page_num].frame_num;
 }
+void page_replacement_FIFO() // TLB 와 page table 둘 다 같은 page replacement 함수를 써야 하는 지는 고민 중.
+{
+}
 
+void page_replacement_LRU()
+{
+}
 
 int calculate_phsysical_address(unsigned char frame_num, unsigned char offset) // calculating physical address may not be needed. getting frame number and offset may be final step.
 {
