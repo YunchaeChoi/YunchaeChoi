@@ -15,8 +15,8 @@ typedef int Data; // replace it with any data type you need
 typedef struct _Node
 {
 	Data data;
-	struct _Node* next; // to the bottom of the stack ( head )
-	struct _Node* prev; // going 'prev' side is going upward the stack ( to the top of the stack ) ( tail )
+	struct _Node* next; // to the top of the stack ( tail )
+	struct _Node* prev; // going 'prev' side is going downward the stack ( to the bottom of the stack ) ( head )
 }Node;
 
 typedef struct _LinkedListStack
