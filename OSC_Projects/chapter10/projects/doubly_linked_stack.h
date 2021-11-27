@@ -12,6 +12,8 @@
 
 typedef int Data; // replace it with any data type you need
 
+
+
 typedef struct _Node
 {
 	Data data;
@@ -154,13 +156,15 @@ Data SPop_middle(Stack* stack, Data data) // popping not top of the stack, but m
 
 	if(delNode==stack->tail)
 	{
-		delNode->next->prev=delNode->prev;
+		delNode->prev->next=delNode->next;
+		stack->tail= delNode->prev;
 		free(delNode);
 		return value;
 	}
 	if(delNode==stack->head)
 	{
-		delNode->prev->next = delNode->next;
+		delNode->next->prev = delNode->prev;
+		stack->head = delNode->next;
 		free(delNode);
 		return value;
 	}
@@ -168,6 +172,16 @@ Data SPop_middle(Stack* stack, Data data) // popping not top of the stack, but m
 	delNode->prev->next = delNode->next;
 	free(delNode);
 	stack->size--;
+	return value;
+}
+
+Data SPop_Bottom(Stack* stack)
+{
+	Node *delNode= stack->head;
+	Data value= stack->head->value;
+	delNode->next->prev = delNode->prev;
+	stack->head = delNode->next;
+	free(delNode);
 	return value;
 }
 
@@ -180,6 +194,8 @@ Data SBottom(Stack* stack) // show bottom of the stack ( a.k.a. head )
 {
 	return stack->head->data;
 }
+
+
 
 int StackSize(Stack* stack)
 {

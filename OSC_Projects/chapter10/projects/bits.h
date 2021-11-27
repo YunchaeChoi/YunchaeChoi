@@ -13,6 +13,7 @@
 #define PGN_MASK 0xFF00 // page number mask
 #define REMAIN_BITS_MASK 0xFFFF0000
 
+/* 32-bit logical address */
 
 unsigned char extract_offset(int logical_address);
 unsigned char extract_page_number(int logical_address);
@@ -30,7 +31,7 @@ unsigned char extract_page_number(int logical_address)
     return (logical_address & PGN_MASK)>>8;
 }
 
-unsigned char extract_remain_bits(int logical_address)
+unsigned char extract_remain_bits(int logical_address) // no need
 {
     return (logical_address & REMAIN_BITS_MASK)>>16;
 }
