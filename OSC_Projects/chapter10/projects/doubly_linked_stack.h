@@ -27,12 +27,36 @@ typedef struct _LinkedListStack
 }LinkedListStack;
 
 typedef LinkedListStack Stack;
-
+/*
 Stack* MakeStack()
 {
 	Stack* return_stack = (Stack*)malloc(sizeof(Stack));
 	return return_stack;
 }
+*/
+
+void StackInit(Stack* stack);
+
+Node* NodeInit(Data data);
+
+int SIsEmpty(Stack* stack);
+
+void SPush(Stack* stack, Data data);
+
+Data SPop(Stack* stack);
+
+Data SPop_middle(Stack* stack, Data data);
+
+Data SPeek(Stack* stack);
+
+Data SBottom(Stack* stack);
+
+int StackSize(Stack* stack);
+
+void StackShow(Stack* stack);
+
+void StackDestroy(Stack* stack);
+
 
 void StackInit(Stack* stack) // initializes the stack
 {
@@ -50,65 +74,66 @@ Node* NodeInit(Data data)
 	return newNode;
 }
 
-int SIsEmpty(Stack* list)
+int SIsEmpty(Stack* stack)
 {
-	return list->size && 0; // return 1 if Stack is empty, 0 if not empty
+	return !stack->size; // return 1 if Stack is empty, 0 if not empty
 }
 
-void SPush(Stack* list, Data data)
+void SPush(Stack* stack, Data data)
 {
-	Node* newNode=Node_init(data);
+	Node* newNode=NodeInit(data);
 	Node* oldTail; // oldTail : 현재의 마지막(가장 위) 노드를 보관할 변수
 
-	if(SIsEmpty(list))
+	if(SIsEmpty(stack))
 	{
-		list->tail = newNode;
-		list->head = newNode;
+		stack->tail = newNode;
+		stack->head = newNode;
 	}
 	else
 	{
-		oldTail=list->tail;
+		oldTail=stack->tail;
 		oldTail->next=newNode;
 		newNode->prev=oldTail;
-		list->tail=newNode;
+		stack->tail=newNode;
 	}
-	list->size++;
+	stack->size++;
 }
 
-Data SPop_tail(Stack* list)
+Data SPop(Stack* stack)
 {
-	Node* currentTail = list->tail;
+	Node* currentTail = stack->tail;
 	Node* newTail;
 	Data return_value;
 
-	if(SIsEmpty(list))
+	if(SIsEmpty(stack))
 	{
 		printf("popping an empty stack is unavailable\n");
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
-		newTail=list->tail->prev; 
+		newTail=stack->tail->prev; 
 		return_value=currentTail->data;
 		newTail->next=NULL;
-		list->tail=newTail;
+		stack->tail=newTail;
 	}
-	list->size--;
+	stack->size--;
 
 	free(currentTail);
 	return return_value;
 }
 
-void SPop_middle(Stack* list, Data data) // popping not top of the stack, but middle of bottome of the stack
+Data SPop_middle(Stack* stack, Data data) // popping not top of the stack, but middle of bottome of the stack
 {
 	int is_exist=0; // set to 1 if request data is in the stack
 	Node* delNode;
-	if(SIsEmpty(list))
+	Data value; // to be returned
+	if(SIsEmpty(stack))
 	{
 		printf("popping an empty stack is unavailable\n");
-		return;
+		exit(EXIT_FAILURE);
 	}
-	delNode=list->tail;
+	delNode=stack->tail;
 	do
 	{
 		if(delNode->data == data)
@@ -122,75 +147,79 @@ void SPop_middle(Stack* list, Data data) // popping not top of the stack, but mi
 	if(!is_exist)
 	{
 		printf("request data is not in the stack\n");
-		return;
+		exit(EXIT_FAILURE);
 	}
 
-	if(delNode==list->tail)
+	value=delNode->data;
+
+	if(delNode==stack->tail)
 	{
 		delNode->next->prev=delNode->prev;
 		free(delNode);
-		return;
+		return value;
 	}
-	if(delNode==list->head)
+	if(delNode==stack->head)
 	{
 		delNode->prev->next = delNode->next;
 		free(delNode);
-		return;
+		return value;
 	}
-
 	delNode->next->prev = delNode->prev;
 	delNode->prev->next = delNode->next;
 	free(delNode);
-	return;
+	stack->size--;
+	return value;
 }
 
-Node* SPeek(Stack* list) // show top of the stack ( a.k.a. tail )
+Data SPeek(Stack* stack) // show top of the stack ( a.k.a. tail )
 {
-	return list->tail;
+	return stack->tail->data;
 }
 
-Node* SBottom(Stack* list) // show bottom of the stack ( a.k.a. head )
+Data SBottom(Stack* stack) // show bottom of the stack ( a.k.a. head )
 {
-	return list->head;
+	return stack->head->data;
 }
 
-void StackShow(Stack* list)
+int StackSize(Stack* stack)
 {
-	if(SIsEmpty(list))
+	return stack->size;
+}
+
+void StackShow(Stack* stack)
+{
+	if(SIsEmpty(stack))
 	{
 		printf("stack is empty. nothing to show\n");
 	}
-	Node* showNode=list->tail;
+	Node* showNode=stack->tail;
 	while(showNode)
 	{
-		printf("%d\n",showNode);
+		printf("%d\n",showNode->data);
 		showNode=showNode->next;
 	}
 	return;
 }
 
-void StackDestroy(Stack* list) // destory stack's all node and stack itself
+void StackDestroy(Stack* stack) // destory stack's all node and stack itself
 {
-	Node* delNode = list->tail;
+	Node* delNode = stack->tail;
 	while(delNode)
 	{
-		list->tail=list->tail->prev;
+		stack->tail=stack->tail->prev;
 		free(delNode);
-		delNode=list->tail;
+		delNode=stack->tail;
 	}
-	free(list);
+	free(stack);
 }
 
 /* Example code 
- * int main()
- {
-	  Stack* stack;
-	  stack=stack_init();
-	  push_stack(stack,123);
-	  pop_tail(stack);
-	  destroy_stack(stack);
-	  return 0;
+-----------------------
+int main()
+{
+	return 0;
 }
+-----------------------
 */
 
 #endif

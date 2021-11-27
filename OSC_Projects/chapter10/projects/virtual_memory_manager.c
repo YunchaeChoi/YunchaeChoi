@@ -100,6 +100,8 @@ void page_replacement_LRU();
 
 int main(int argc, char* argv[])
 {
+	/* when creating stack, lookup stack_test.c */
+
     char* strtol_ptr;      // for strtol
     char* input_address;
     char address_buffer[7];
