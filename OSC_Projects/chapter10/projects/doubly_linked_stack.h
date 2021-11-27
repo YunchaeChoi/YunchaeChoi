@@ -15,9 +15,9 @@ typedef int Data; // replace it with any data type you need
 typedef struct _Node
 {
 	Data data;
-	struct _Node* next;
-	struct _Node* prev;
-} Node;
+	struct _Node* next; // to the bottom of the stack ( head )
+	struct _Node* prev; // going 'prev' side is going upward the stack ( to the top of the stack ) ( tail )
+}Node;
 
 typedef struct _LinkedListStack
 {
@@ -26,17 +26,22 @@ typedef struct _LinkedListStack
 	int size;
 }LinkedListStack;
 
-LinkedListStack* stack_init()
+typedef LinkedListStack Stack;
+
+Stack* MakeStack()
 {
-	LinkedListStack* stack;
-	stack = (LinkedListStack*)malloc(sizeof(LinkedListStack));
+	Stack* return_stack = (Stack*)malloc(sizeof(Stack));
+	return return_stack;
+}
+
+void StackInit(Stack* stack) // initializes the stack
+{
 	stack->head=NULL;
 	stack->tail=NULL;
 	stack->size=0;
-	return stack;
 }
 
-Node* Node_init(Data data)
+Node* NodeInit(Data data)
 {
 	Node* newNode= (Node*)malloc(sizeof(Node));
 	newNode->data = data;
@@ -45,17 +50,17 @@ Node* Node_init(Data data)
 	return newNode;
 }
 
-int is_Empty(LinkedListStack* list)
+int SIsEmpty(Stack* list)
 {
-	return list->size && 0; // return 1 if LinkedListStack is empty, 0 if not empty
+	return list->size && 0; // return 1 if Stack is empty, 0 if not empty
 }
 
-void push_stack(LinkedListStack* list, Data data)
+void SPush(Stack* list, Data data)
 {
 	Node* newNode=Node_init(data);
 	Node* oldTail; // oldTail : 현재의 마지막(가장 위) 노드를 보관할 변수
 
-	if(is_Empty(list))
+	if(SIsEmpty(list))
 	{
 		list->tail = newNode;
 		list->head = newNode;
@@ -70,13 +75,13 @@ void push_stack(LinkedListStack* list, Data data)
 	list->size++;
 }
 
-Data pop_tail(LinkedListStack* list)
+Data SPop_tail(Stack* list)
 {
 	Node* currentTail = list->tail;
 	Node* newTail;
 	Data return_value;
 
-	if(is_Empty(list))
+	if(SIsEmpty(list))
 	{
 		printf("popping an empty stack is unavailable\n");
 		exit(EXIT_FAILURE);
@@ -94,11 +99,11 @@ Data pop_tail(LinkedListStack* list)
 	return return_value;
 }
 
-void pop_middle(LinkedListStack* list, Data data) // popping not top of the stack, but middle of bottome of the stack
+void SPop_middle(Stack* list, Data data) // popping not top of the stack, but middle of bottome of the stack
 {
 	int is_exist=0; // set to 1 if request data is in the stack
 	Node* delNode;
-	if(is_Empty(list))
+	if(SIsEmpty(list))
 	{
 		printf("popping an empty stack is unavailable\n");
 		return;
@@ -137,22 +142,34 @@ void pop_middle(LinkedListStack* list, Data data) // popping not top of the stac
 	delNode->prev->next = delNode->next;
 	free(delNode);
 	return;
-
-
-
 }
 
-Node* tail_stack(LinkedListStack* list)
+Node* SPeek(Stack* list) // show top of the stack ( a.k.a. tail )
 {
 	return list->tail;
 }
 
-Node* head_stack(LinkedListStack* list)
+Node* SBottom(Stack* list) // show bottom of the stack ( a.k.a. head )
 {
 	return list->head;
 }
 
-void destroy_stack(LinkedListStack* list) // destory stack's all node and stack itself
+void StackShow(Stack* list)
+{
+	if(SIsEmpty(list))
+	{
+		printf("stack is empty. nothing to show\n");
+	}
+	Node* showNode=list->tail;
+	while(showNode)
+	{
+		printf("%d\n",showNode);
+		showNode=showNode->next;
+	}
+	return;
+}
+
+void StackDestroy(Stack* list) // destory stack's all node and stack itself
 {
 	Node* delNode = list->tail;
 	while(delNode)
@@ -167,7 +184,7 @@ void destroy_stack(LinkedListStack* list) // destory stack's all node and stack 
 /* Example code 
  * int main()
  {
-	  LinkedListStack* stack;
+	  Stack* stack;
 	  stack=stack_init();
 	  push_stack(stack,123);
 	  pop_tail(stack);
