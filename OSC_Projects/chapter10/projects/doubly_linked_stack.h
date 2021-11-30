@@ -10,13 +10,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int Data; // replace it with any data type you need
-
+typedef unsigned char Pdata; // for page table stack
 
 
 typedef struct _Node
 {
-	Data data;
+	Pdata data;
 	struct _Node* next; // to the top of the stack ( tail )
 	struct _Node* prev; // going 'prev' side is going downward the stack ( to the bottom of the stack ) ( head )
 }Node;
@@ -39,19 +38,19 @@ Stack* MakeStack()
 
 void StackInit(Stack* stack);
 
-Node* NodeInit(Data data);
+Node* NodeInit(Pdata data);
 
 int SIsEmpty(Stack* stack);
 
-void SPush(Stack* stack, Data data);
+void SPush(Stack* stack, Pdata data);
 
-Data SPop(Stack* stack);
+Pdata SPop(Stack* stack);
 
-Data SPop_middle(Stack* stack, Data data);
+Pdata SPop_middle(Stack* stack, Pdata data);
 
-Data SPeek(Stack* stack);
+Pdata SPeek(Stack* stack);
 
-Data SBottom(Stack* stack);
+Pdata SBottom(Stack* stack);
 
 int StackSize(Stack* stack);
 
@@ -67,7 +66,7 @@ void StackInit(Stack* stack) // initializes the stack
 	stack->size=0;
 }
 
-Node* NodeInit(Data data)
+Node* NodeInit(Pdata data)
 {
 	Node* newNode= (Node*)malloc(sizeof(Node));
 	newNode->data = data;
@@ -81,7 +80,7 @@ int SIsEmpty(Stack* stack)
 	return !stack->size; // return 1 if Stack is empty, 0 if not empty
 }
 
-void SPush(Stack* stack, Data data)
+void SPush(Stack* stack, Pdata data)
 {
 	Node* newNode=NodeInit(data);
 	Node* oldTail; // oldTail : 현재의 마지막(가장 위) 노드를 보관할 변수
@@ -101,11 +100,11 @@ void SPush(Stack* stack, Data data)
 	stack->size++;
 }
 
-Data SPop(Stack* stack)
+Pdata SPop(Stack* stack)
 {
 	Node* currentTail = stack->tail;
 	Node* newTail;
-	Data return_value;
+	Pdata return_value;
 
 	if(SIsEmpty(stack))
 	{
@@ -125,11 +124,11 @@ Data SPop(Stack* stack)
 	return return_value;
 }
 
-Data SPop_middle(Stack* stack, Data data) // popping not top of the stack, but middle of bottome of the stack
+Pdata SPop_middle(Stack* stack, Pdata data) // popping not top of the stack, but middle of bottome of the stack
 {
 	int is_exist=0; // set to 1 if request data is in the stack
 	Node* delNode;
-	Data value; // to be returned
+	Pdata value; // to be returned
 	if(SIsEmpty(stack))
 	{
 		printf("popping an empty stack is unavailable\n");
@@ -175,22 +174,22 @@ Data SPop_middle(Stack* stack, Data data) // popping not top of the stack, but m
 	return value;
 }
 
-Data SPop_Bottom(Stack* stack)
+Pdata SPop_Bottom(Stack* stack)
 {
 	Node *delNode= stack->head;
-	Data value= stack->head->value;
+	Pdata value= stack->head->value;
 	delNode->next->prev = delNode->prev;
 	stack->head = delNode->next;
 	free(delNode);
 	return value;
 }
 
-Data SPeek(Stack* stack) // show top of the stack ( a.k.a. tail )
+Pdata SPeek(Stack* stack) // show top of the stack ( a.k.a. tail )
 {
 	return stack->tail->data;
 }
 
-Data SBottom(Stack* stack) // show bottom of the stack ( a.k.a. head )
+Pdata SBottom(Stack* stack) // show bottom of the stack ( a.k.a. head )
 {
 	return stack->head->data;
 }

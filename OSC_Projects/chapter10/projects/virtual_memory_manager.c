@@ -26,11 +26,26 @@
  * 6. Physical memory of 65,636(2^16) bytes (256 frames * 256-byte frame size)
 */
 
+/* if page fault occurs, we need to do
+ * 1. read in a 256-byte page from the file BACKING_STORE.bin
+ * 2. and store it in an available page frame in physical memory
+ * 3. update page table
+ * 4. update TLB 
+ * 5. read page will be resolved by either the TLB or the page table
+ */
+
+// Page : contiguous region of virtual memory
+// Frame: contiguous region of physical memory
+// Eviction : removing a pge from its frame and potentially writing it to swap table for file system
+// Swap Table : where evicted pages are written to in the swap partition
+
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "bits.h"
 #include "doubly_linked_stack.h"
+#include "list.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -81,12 +96,18 @@ typedef struct _physical_memory_frame
 }physical_memory_frame;
 
 
+
+
 /* global variables */
 tlb TLB[16]; // TLB with 16 entries
 
 PAGE_TABLE page_table[PAGE_TABLE_SIZE]; // page table with 2^8 entries
 
 physical_memory_frame physical_memory[PHYSICAL_MEMORY_SIZE]; // 256frames * 256-byte frame size < Physical Memory >
+
+int frame_table[256]; // global data structure that keeps track of physical frames that are allocated/free
+
+unsigned char file_mapping_table[256]; // keeps track of which memory-mapped files are mapped to which pages
 
 /* fucntions */
 
@@ -108,6 +129,15 @@ int TLB_Find_Empty();
 
 
 /* main */
+// Your program will open addresses.txt, 
+// read each logical address
+// and translate it to its corresponding physical address
+// and output the value of the signed byte at the physical address
+//
+// after completion,
+// your program is to report...
+// 1. Page-fault rate - the percentage of address references that resulted in page faults
+// 2. TLB hit read - the percentage of address references that were resolved in the TLB
 
 int main(int argc, char* argv[])
 {
@@ -120,13 +150,13 @@ int main(int argc, char* argv[])
 	Stack* TLB_stack; // LRU using stack. check OSC page 520.
 	TLB_stack = stack_init(); 	// stack initialzed.
 
-	Stack* page_stack; // we need two stacks. one for TLb, and one for page table
+	Stack* page_stack; // we need two stacks. one for TLB, and one for page table ( this one )
 	page_stack = stack_init(); // both for LRU algorithm
 	
 	TLB_initialize();
 
     FILE* fp;
-    if( (fp=fopen(argv[1],"r"))==NULL )
+    if((fp=fopen(argv[1],"r"))==NULL ) // opens BackingStore/addresses.txt
     {
         printf("file open error.\n");
         exit(EXIT_FAILURE);
@@ -136,6 +166,9 @@ int main(int argc, char* argv[])
         input_address=fgets(address_buffer,sizeof(address_buffer),fp);
         logic_addr=(int)strtol(input_address,&strtol_ptr,10); // logical address acquired. (int type)
     }
+
+
+
     return 0;
 }
 
@@ -159,8 +192,8 @@ tlb* TLB_search(unsigned char page_num)
             tlb* tlb_ptr = &TLB[i]; 
             return tlb_ptr; // means TLB_HIT
         }
-    }
-    return NULL; // means TLB_MISS
+    tlb* tlb_ptr = NULL; 
+    return tlb_ptr; // means TLB_MISS
 }
 
 unsigned char page_walk(unsigned char page_num) // if TLB miss -> check page table(traversal) / page walk / return value is physical frame number
@@ -170,10 +203,10 @@ unsigned char page_walk(unsigned char page_num) // if TLB miss -> check page tab
         /* page fault */
         /* page fault hadling function - page replacemnet policy */
     }
-    return page_table[page_num].frame_num;
+    return page_table[page_num].frame_num; // return frame number
 }
 
-void page_replacement_FIFO() // TLB 와 page table 둘 다 같은 page replacement 함수를 써야 하는 지는 고민 중.
+void page_replacement_FIFO() 
 {
 
 }
@@ -181,7 +214,6 @@ void page_replacement_FIFO() // TLB 와 page table 둘 다 같은 page replaceme
 void page_replacement_LRU(unsigned char page_num, FILE* fp) // most recently used page is always at the top of the stack. So bottom node of the stack will be the victim frame  ( least recently used )
 {
 	/* need to look up backingstore.bin */ 
-
 }
 
 void TLB_replacement_LRU(unsigned char page_num, unsigned char frame_num, Stack* stack) // these arguments are new PTE to be place in the TLB
@@ -191,6 +223,7 @@ void TLB_replacement_LRU(unsigned char page_num, unsigned char frame_num, Stack*
 	SPop_Bottom(stack); // pop bottom
 	SPush(stack,);
 }
+
 
 int calculate_phsysical_address(unsigned char frame_num, unsigned char offset) 
 {
@@ -218,10 +251,10 @@ int TLB_Find_Empty()
 	return TLB_idx; // return first met empty TLB_entry index
 }
 
-void TLB_update(unsigned char page_num, unsigned char frame_num) // if TLB miss, TLB must be updated and also when TLBs are initially filled
-{
-	if(TLB_Find_Empty() != -1) // if TLB entries are not full
-	{
+void TLB_update(unsigned char page_num, unsigned char frame_num) 
+{                                                                // there are two cases when TLB must be updated
+	if(TLB_Find_Empty() != TLB_FULL) // TLB initialization step        // 1. at first, TLB entries are empty. so they must be initialized
+	{                                                            // 2. when TLB miss occurs, least recently used TLB must be replaced(LRU) and new TLB will be pushed into the top of the stack
 		TLB_idx = TLB_Find_Empty();
 		tlb* tlb_ptr = &TLB[TLB_idx];
 		tlb_ptr->page_num=page_num;
