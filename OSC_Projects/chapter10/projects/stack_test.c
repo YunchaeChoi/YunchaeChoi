@@ -9,8 +9,7 @@ int main()
 	SPush(stack, 12);
 	SPush(stack, 13);
 	SPush(stack, 14);
-	int value = SPop_middle(stack,13);
-
+	int value = SPop_Bottom(stack);
 	printf("top: %d\n",SPeek(stack));
 	printf("middle: %d\n",value);
 	printf("size: %d\n",StackSize(stack));

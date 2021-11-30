@@ -177,7 +177,7 @@ Pdata SPop_middle(Stack* stack, Pdata data) // popping not top of the stack, but
 Pdata SPop_Bottom(Stack* stack)
 {
 	Node *delNode= stack->head;
-	Pdata value= stack->head->value;
+	Pdata value= stack->head->data;
 	delNode->next->prev = delNode->prev;
 	stack->head = delNode->next;
 	free(delNode);
@@ -228,13 +228,5 @@ void StackDestroy(Stack* stack) // destory stack's all node and stack itself
 	free(stack);
 }
 
-/* Example code 
------------------------
-int main()
-{
-	return 0;
-}
------------------------
-*/
 
 #endif

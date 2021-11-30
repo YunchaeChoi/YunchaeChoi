@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 	{
         if( fread(&data,sizeof(int),1,fp)==0 )
             break;
-        printf("%d",data);
+        printf("%d\n",data);
 	}
     printf("\n");
 	fclose(fp);
