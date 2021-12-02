@@ -43,6 +43,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 #include "bits.h"
 #include "doubly_linked_stack.h"
 #include "list.h"
@@ -50,33 +51,12 @@
 #define TRUE 1
 #define FALSE 0
 
-#define TLB_EMPTY 0
-#define TLB_SET 1
-
-#define TLB_HIT 1
-#define TLB_MISS 0
-
-#define TLB_FULL -1
-
-#define TLB_not_refereced 0
-#define TLB_referenced 1
-
 #define PAGE_FAULT 0
 
 #define PAGE_TABLE_SIZE 256
-#define TLB_SIZE 16
 #define PHYSICAL_MEMORY_SIZE 256
 #define FRAME_SIZE 256
 
-/*
-typedef struct _tlb
-{
-    int valid_bit; // TLB_EMPTY or TLB_SET. tells the hardware if there is a valid translation present in the entry ( from OSTEP )
-    unsigned char page_num;
-    unsigned char frame_num;
-    int access_bit; // reference bit. useful in page replacement policy
-}tlb;
-*/
 
 typedef struct _PTE // pte to be pushed into stack ( TLB LRU )
 {					// because valid_bit and access_bit don't need to be pushed into the stack
@@ -101,7 +81,6 @@ typedef struct _physical_memory_frame
 
 
 /* global variables */
-//tlb TLB[16]; // TLB with 16 entries
 
 PAGE_TABLE page_table[PAGE_TABLE_SIZE]; // page table with 2^8 entries
 
@@ -113,27 +92,17 @@ unsigned char file_mapping_table[256]; // keeps track of which memory-mapped fil
 
 /* fucntions */
 
-void TLB_initialize();
-
 void page_table_initialize();
 
 void init();
-
-tlb* TLB_search(unsigned char page_num);
 
 unsigned char page_walk(unsigned char page_num);
 
 int calculate_phsysical_address(unsigned char frame_num, unsigned char offset);
 
-void TLB_update(unsigned char page_num, unsigned char frame_num);
-
 void page_replacement_FIFO();
 
 void page_replacement_LRU();
-
-int TLB_Find_Empty();
-
-void printf_TLB();
 
 void print_page_table();
 
@@ -158,13 +127,10 @@ int main(int argc, char* argv[])
     int logic_addr;     // logical address
     unsigned char logical_address; // logical address. rightmost 16 bits in unsigned char type
 
-	Stack* TLB_stack; // LRU using stack. check OSC page 520.
-	StackInit(TLB_stack); 	// stack initialzed.
-
 	Stack* page_stack; // we need two stacks. one for TLB, and one for page table ( this one )
 	StackInit(page_stack); // both for LRU algorithm
-	
-	TLB_initialize();
+
+    init();
 
     FILE* fp;
     if((fp=fopen(argv[1],"r"))==NULL ) // opens BackingStore/addresses.txt
@@ -175,32 +141,21 @@ int main(int argc, char* argv[])
     while(!feof(fp)) //feof returns non-zero value if EOF
     {
         input_address=fgets(address_buffer,sizeof(address_buffer),fp);
-        //logic_addr=(int)strtol(input_address,&strtol_ptr,10);  // logical address acquired. (int type)
+        if(input_address==NULL) 
+            break;
         logic_addr=atoi(input_address);
 
         unsigned char page_number = extract_page_number(logic_addr);
         unsigned char offset= extract_offset(logic_addr);
-
     }
     return 0;
 }
 
 void init()
 {
-    TLB_initialize();
     page_table_initialize();
 }
 
-void TLB_initialize()
-{
-    tlb* tlb_ptr;
-    for(int i=0;i<TLB_SIZE;i++)
-    {
-        tlb_ptr=&TLB[i];
-        tlb_ptr->valid_bit=TLB_EMPTY;
-		tlb_ptr->access_bit=TLB_not_refereced;
-    }
-}
 
 void page_table_initialize()
 {
@@ -213,19 +168,6 @@ void page_table_initialize()
     }
 }
 
-tlb* TLB_search(unsigned char page_num)
-{
-    for(int i=0;i<16;i++)
-    {
-        if(TLB[i].valid_bit==TLB_SET && TLB[i].page_num == page_num) 
-        {
-            tlb* tlb_ptr = &TLB[i]; 
-            return tlb_ptr; // means TLB_HIT
-        }
-    }
-    tlb* tlb_ptr = NULL; 
-    return tlb_ptr; // means TLB_MISS
-}
 
 unsigned char page_walk(unsigned char page_num) // if TLB miss -> check page table(traversal) / page walk / return value is physical frame number
 {
@@ -249,12 +191,7 @@ void page_replacement_LRU(unsigned char page_num, FILE* fp) // most recently use
 }
 
 
-void TLB_replacement_LRU(unsigned char page_num, unsigned char frame_num, Stack* stack) // these arguments are new PTE to be place in the TLB
-{
-	 //the bottom Node of the stack will be the victim 
-}
 */
-
 
 int calculate_phsysical_address(unsigned char frame_num, unsigned char offset) 
 {
@@ -265,53 +202,6 @@ int calculate_phsysical_address(unsigned char frame_num, unsigned char offset)
     return physical_address;
 }
 
-int TLB_Find_Empty()
-{
-	int empty=0;
-	int TLB_idx=0;
-	for(;TLB_idx;TLB_idx++)
-		if(TLB[TLB_idx].valid_bit == TLB_EMPTY)
-		{
-			empty=1;
-			break;
-		}
-	if(!empty) // TLB entries are full
-	{
-		return TLB_FULL; // return -1;
-	}
-	return TLB_idx; // return first met empty TLB_entry index
-}
-
-void TLB_update(unsigned char page_num, unsigned char frame_num) 
-{                                                                // there are two cases when TLB must be updated
-	if(TLB_Find_Empty() != TLB_FULL) // TLB initialization step        // 1. at first, TLB entries are empty. so they must be initialized
-	{                                                            // 2. when TLB miss occurs, least recently used TLB must be replaced(LRU) and new TLB will be pushed into the top of the stack
-		int TLB_idx = TLB_Find_Empty();
-		tlb* tlb_ptr = &TLB[TLB_idx];
-		tlb_ptr->page_num=page_num;
-		tlb_ptr->frame_num=frame_num;
-		tlb_ptr->valid_bit=TLB_SET;
-	}
-	else // if TLB entries are full
-	{
-		/* TLB replacement policy */
-	}
-}
-/*
-
-void TLB_to_PFN(unsigned char page_num, tlb* tlb_ptr, Stack* TLB_stack) // if TLB hit, return physical frame number from TLB
-{
-    tlb_ptr->access_bit=TLB_referenced
-	
-	 //push this page_num to top of the stack
-	 //if this page_num already exists in the stack,
-	 //pop it and push it to the top of the stack 
-
-	
-	return tlb_ptr->frame_num;
-}
-*/
-
 void print_page_table()
 {
     int i=0;
@@ -320,17 +210,4 @@ void print_page_table()
     {
         printf("%d | %d\n",i,page_table[i].frame_num);
     }
-}
-
-void print_TLB()
-{
-    int i=0;
-    printf("------------------TLB---------------------\n");
-
-    for(;i<TLB_SIZE;i++)
-    {
-        printf("%d | %d\n",TLB[i].page_num,TLB[i].frame_num);
-    }
-    printf("\n");
-    return ;
 }
