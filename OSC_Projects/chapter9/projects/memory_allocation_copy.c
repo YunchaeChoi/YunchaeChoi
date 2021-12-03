@@ -56,6 +56,10 @@ void merge_free_blocks(MemBlock* block,MemBlock* block_merge); // two blocks mus
 
 void swap_blocks(MemBlock* head, MemBlock* proc);
 
+int is_there_process(); // return 1 if there are at least one process on the memory. else return 0
+
+int is_there_free_block(); // return 1 if at least one free block. else return 0
+
 
 /* global variables */
 size_t mem_size;  // must be initialized to (size_t)argv[1]
@@ -120,7 +124,6 @@ main(int argc, char* argv[])
 		{
 			compact_memory();
 		}
-
 
 	}
 	free(line);
@@ -279,23 +282,45 @@ MemBlock* find_head_free() // find lowest memory(address) of free block
         return NULL;
 }
 
-MemBlock* find_proc()
+int is_there_process()
 {
-    int proc_flag=0; // set to 1 if at least one process exists in the memory
     MemBlock* ret=mem;
     while(ret)
     {
         if(ret->process)
         {
-            proc_flag=1;
-            break;
+            return 1;
         }
         ret=ret->next;
     }
-    if(proc_flag)
-        return ret;
-    else
-        return NULL;
+    return 0;
+}
+
+int is_there_free_block()
+{
+    MemBlock* ret=mem;
+    while(ret)
+    {
+        if(!ret->process)
+        {
+            return 1;
+        }
+        ret=ret->next;
+    }
+    return 0;
+}
+
+MemBlock* find_proc()
+{
+    MemBlock* ret=mem;
+    while(ret)
+    {
+        if(ret->process)
+        {
+            return ret;
+        }
+        ret=ret->next;
+    }
 }
 
 void merge_free_blocks(MemBlock* block,MemBlock* block_merge) // two blocks must be free(not allocated), and not have a name(process), not be NULL
@@ -352,30 +377,34 @@ void swap_blocks(MemBlock* head, MemBlock* proc) // swap two blocks
 
 void compact_memory() // will move all existing processes to low memory
 {
+    if(!is_there_free_block) // there is no free block
+    {
+        printf("there is no free block to compact\n");
+        return; // no need to compact
+    }
+    if(!is_there_process)
+    {
+        printf("there is no process on the memory\n");
+        return;
+    }
+
     MemBlock* proc; // existing memory allocated to a process
     MemBlock* head; // lowest address of free memory block
-
     do
     {
-        proc=find_proc();
-        head=find_head_free();
+        if(is_there_process)
+            proc=find_proc();
+        else
+            break;
 
-        if(proc==NULL || head==NULL)
-        {
-            if(proc==NULL)
-            {
-                printf("there is no currently running process.\n");
-                return;
-            }
-            else
-            {
-                printf("there is no free memory to compact\n");
-                return;
-            }
-        }
+        if(is_there_free_block)
+            head=find_head_free();
+        else
+            break;
+
         swap_blocks(head,proc); // swap free block and existing process
-
     }while(head->next);
+    printf("compact done\n");
 }
 
 void release_memory(char* process)
