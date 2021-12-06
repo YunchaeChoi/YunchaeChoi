@@ -68,7 +68,6 @@
 #define PHYSICAL_MEMORY_SIZE 256
 #define FRAME_SIZE 256
 
-/*
 typedef struct _tlb
 {
     int valid_bit; // TLB_EMPTY or TLB_SET. tells the hardware if there is a valid translation present in the entry ( from OSTEP )
@@ -76,7 +75,6 @@ typedef struct _tlb
     unsigned char frame_num;
     int access_bit; // reference bit. useful in page replacement policy
 }tlb;
-*/
 
 typedef struct _PTE // pte to be pushed into stack ( TLB LRU )
 {					// because valid_bit and access_bit don't need to be pushed into the stack
@@ -101,7 +99,7 @@ typedef struct _physical_memory_frame
 
 
 /* global variables */
-//tlb TLB[16]; // TLB with 16 entries
+tlb TLB[16]; // TLB with 16 entries
 
 PAGE_TABLE page_table[PAGE_TABLE_SIZE]; // page table with 2^8 entries
 
@@ -204,7 +202,7 @@ void TLB_initialize()
 
 void page_table_initialize()
 {
-    PAGE_TABLE* *page_table_ptr;
+    PAGE_TABLE** page_table_ptr;
     for(int i=0;i<PAGE_TABLE_SIZE;i++)
     {
         page_table_ptr = &page_table[i];
