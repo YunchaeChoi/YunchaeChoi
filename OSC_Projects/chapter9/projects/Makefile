@@ -1,6 +1,6 @@
-allocator_1048576:memory_allocation_copy.o
-	gcc -o allocator_1048576 memory_allocation_copy.o -Wall -Werror
-memory_allocation_copy.o:memory_allocation_copy.c
-	gcc -c memory_allocation_copy.c
+allocator_1048576:memory_allocation.o
+	gcc -o allocator_1048576 memory_allocation.o -Wall -Werror
+memory_allocation.o:memory_allocation.c
+	gcc -c memory_allocation.c
 clean:
-	rm memory_allocation_copy.o allocator_1048576
+	rm memory_allocation.o allocator_1048576
