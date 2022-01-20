@@ -45,11 +45,13 @@ Will add TLB after the success of this code.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/uio.h>
 #include "bits.h"
 #include "doubly_linked_stack.h"
 #include "list.h"
 
-#define TRUE 2
+#define TRUE 1 
 #define FALSE 0
 
 #define PAGE_FAULT 0
@@ -59,24 +61,25 @@ Will add TLB after the success of this code.
 #define TLB_SIZE 16
 #define PHYSICAL_MEMORY_SIZE 256
 #define FRAME_SIZE 256
+#define SINGLE_PAGE_SIZE 256
 
 typedef struct _PAGE_TABLE
 {
     signed char frame_num;
     int valid_bit;   // valid-invalid bit. look up the book ( 0 or 1 )
-    int access_bit;  // a.k.a. reference bit. used to track whether a page has been accessed ( useful in page replacement algorithm )
+//    int access_bit;  // a.k.a. reference bit. used to track whether a page has been accessed ( useful in page replacement algorithm ) // we'll come back to this later. not now
 }PAGE_TABLE;
 
-typedef struct _physical_memory_frame
+typedef struct physical_memory
 {
     unsigned char frame[FRAME_SIZE]; //256-byte frame size 
-}physical_memory_frame;
+}PHYSICAL_MEMORY;
 
 /* global variables */
 
 PAGE_TABLE page_table[PAGE_TABLE_SIZE]; // page table with 2^8 entries
 
-physical_memory_frame physical_memory[PHYSICAL_MEMORY_SIZE]; // 256frames * 256-byte frame size < Physical Memory >
+PHYSICAL_MEMORY physical_memory[PHYSICAL_MEMORY_SIZE]; // 256frames * 256-byte frame size < Physical Memory >
 
 int frame_table[256]; // global data structure that keeps track of physical frames that are allocated/free
 
@@ -86,7 +89,15 @@ unsigned char file_mapping_table[256]; // keeps track of which memory-mapped fil
 
 void page_table_initialize();
 
+void physical_memory_initialize();
+
 void init();
+
+void translate_address(char* line,unsigned char* page_number, unsigned char* offset);
+
+int read_single_byte (unsigned char page_number,unsigned char offset); 
+
+void read_page(unsigned char page_number);
 
 unsigned char page_walk(unsigned char page_num);
 
@@ -97,6 +108,8 @@ void page_replacement_FIFO();
 void page_replacement_LRU();
 
 void print_page_table();
+
+void paging(unsigned char page_num); // page fault handling_for_page_table
 
 /* main */
 // Your program will open addresses.txt, 
@@ -116,40 +129,54 @@ int main(int argc, char* argv[])
     char* input_address;
     char address_buffer[7];
     int logic_addr;     // logical address
-    unsigned char logical_address; // logical address. rightmost 16 bits in unsigned char type
+//    unsigned char logical_address; // logical address. rightmost 16 bits in unsigned char type
 
 	init();
-	print_page_table();
+//	print_page_table();
 
-    FILE* fp;
-    if((fp=fopen(argv[1],"r"))==NULL ) // opens BackingStore/addresses.txt
-    {
-        printf("file open error.\n");
-        exit(EXIT_FAILURE);
-    }
-    while(!feof(fp)) //feof returns non-zero value if EOF
-    {
-        input_address=fgets(address_buffer,sizeof(address_buffer),fp);
-		if(input_address==NULL) // EOF
-			break;
+	int fd; // file descriptor to open addresses.txt
+	fd = open(argv[1],O_RDONLY);
+	if(fd==-1)
+	{
+			printf("Open failed\n");
+			exit(EXIT_FAILURE);
+	}
+	printf("Opened successfully.\n");
 
-        logic_addr=atoi(input_address);
+	FILE* fp = fdopen(fd,"r");
+	if(fp==NULL)
+	{
+			printf("fd -> fp conversion failed\n");
+			exit(EXIT_FAILURE);
+	}
 
-        unsigned char page_number = extract_page_number(logic_addr);
-        unsigned char offset= extract_offset(logic_addr);
+	char* line =NULL;
+	size_t len=0;
+	ssize_t nread;
 
-		
+	unsigned char page_number;
+	unsigned char offset;
 
-//		printf("page_num is: %hhu\n",page_number);
-//		printf("offset is: %hhu\n",offset);
+	while( (nread = getline(&line, &len, fp)) != -1 )
+	{
+			translate_address(line, &page_number, &offset);
 
-    } 
+			if(page_table[page_number].frame_num==PAGE_TABLE_EMPTY)
+			{
+					paging(page_number);
+			}
+	}
+
+	free(line);
+	fclose(fp);
+	close(fd);
     return 0;
 }
 
 void init()
 {
     page_table_initialize();
+	physical_memory_initialize();
 }
 
 void page_table_initialize()
@@ -160,8 +187,68 @@ void page_table_initialize()
         page_table_ptr = &page_table[i];
 		page_table_ptr->frame_num = PAGE_TABLE_EMPTY;
         page_table_ptr->valid_bit=0;
-        page_table_ptr->access_bit=0;
+//        page_table_ptr->access_bit=0;
     }
+}
+
+void physical_memory_initialize() // PHYSICAL_MEMORY_SIZE and FRAME_SIZE are both 256.
+{
+		PHYSICAL_MEMORY* physical_memory_ptr;
+		for(int i=0;i<PHYSICAL_MEMORY_SIZE;i++)
+		{
+				physical_memory_ptr = &physical_memory[i];
+				for(int j=0;j<FRAME_SIZE;j++)
+				{
+						physical_memory_ptr->frame[j] = 0;
+				}
+		}
+}
+
+void translate_address(char* line,unsigned char* page_number, unsigned char* offset)
+{
+	int logic_addr = atoi(line);
+	
+	*page_number = extract_page_number(logic_addr);
+	*offset= extract_offset(logic_addr);
+}		
+
+int read_single_byte(unsigned char page_number,unsigned char offset) // reads a single byte from a BACKINGSTORE.bin
+{								   								     // correct.txt/value = single byte.
+	int fd_bin = open("./BACKING_STORE.bin",O_RDONLY);
+	if(fd_bin==-1) {printf("binary open failed - read_single_byte\n"); exit(EXIT_FAILURE);}
+	char value;
+	lseek(fd_bin,page_number*SINGLE_PAGE_SIZE + offset, SEEK_SET);
+	if(read(fd_bin,&value,1)== -1) // reads a byte
+	{
+			printf("read single byte failed\n");
+			exit(EXIT_FAILURE);
+	}
+	
+	close(fd_bin);
+	return (int)value;
+}
+
+void read_page(unsigned char page_number)
+{
+	int fd_bin = open("./BACKING_STORE.bin",O_RDONLY);
+	if(fd_bin==-1) {printf("binary open failed - read_page\n"); exit(EXIT_FAILURE);}
+	unsigned char page[SINGLE_PAGE_SIZE];
+
+	lseek(fd_bin,page_number*SINGLE_PAGE_SIZE, SEEK_SET);
+
+	if(read(fd_bin,page,SINGLE_PAGE_SIZE)== -1) // reads a page
+	{
+			printf("read single page failed\n");
+			exit(EXIT_FAILURE);
+	}
+	
+	close(fd_bin);
+	PHYSICAL_MEMORY* physical_memory_ptr;
+	physical_memory_ptr = &physical_memory[page_number];
+	for(int i=0;i<SINGLE_PAGE_SIZE;i++)
+	{
+			physical_memory_ptr->frame[i] = page[i];
+	}
 }
 
 unsigned char page_walk(unsigned char page_num) // if TLB miss -> check page table(traversal) / page walk / return value is physical frame number
@@ -199,12 +286,41 @@ void print_page_table()
     }
 }
 
-void paging(unsigned char page_num) // page fault handling_for_page_table
+void print_physical_memory()
 {
-	/* if a logical address with page number 15 resulted in a page fault,
-	   your program would read in page 15 from BACKING_STROE
-	   and store it in a page frame in physical memory
-	*/
+		int i=0;
+		printf("---------------------phsyical_memory--------------\n");
+
+}
+
+void paging(unsigned char page_number) // page fault handling_for_page_table
+{
+		// means, page_table[page_numer] is PAGE_TABLE_EMPTY. valid_bit : 0.
+		// have to read from BACKING_STORE.bin
+		
+		int fd; // file decriptor. reads BACKING_STORE.bin ( binary file )
+
+		fd = open("./BACKING_STORE.bin",O_RDONLY);
+		if(fd==-1)
+		{
+				printf("Opening BACKING_STORE.bin : FAIL\n");
+				exit(EXIT_FAILURE);
+		}
+
+		unsigned char single_page[SINGLE_PAGE_SIZE]; // reads 256-bytes ( one page ) from BACK~.bin
+
+		lseek(fd,SINGLE_PAGE_SIZE * page_number, SEEK_SET); // file offset positioned to- (page_number)th page. (e.g., 15th page)
+
+		read_page(page_number);
+
+		/*
+		 * what should go in this part, ...
+		 *
+		 // done * A page that has been read above,
+		 // done * should be stored in physical memory.
+		 * And page table should be updated. (and TLB, later)
+		 *
+		 */
 
 
 }

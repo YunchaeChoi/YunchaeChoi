@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
-#define SIZE 255
+#define SIZE 256
 
 
 int main(int argc, char** argv)
@@ -19,16 +19,15 @@ int main(int argc, char** argv)
 	}
 	printf("opened!\n");
 
-	unsigned char value[256];
+	signed char value;
 	printf("hi\n");
-	if(read(fd,value, 256) == -1 )
+	lseek(fd,47 * 256 + 75,SEEK_SET);
+	if(read(fd,&value, 1) == -1 )
 	{
 		printf("read fail!!\n");
 	}
 
-	for(int i=0;i<256;i++)
-		printf("%hhu",value[i]);
-    printf("\n");
+	printf("value: %d\n",value);
 	close(fd);
 	return 0;
 }
