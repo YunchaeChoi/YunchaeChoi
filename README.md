@@ -1,6 +1,6 @@
 - 👋 Hi, I’m @YunchaeChoi
-- 👀 I’m interested in OS, GPGPU
-- 🌱 I’m currently learning OS programming
+- 👀 I’m interested in OS, parallel computing
+- 🌱 I’m currently learning OS, Automaton, Database... 
 - 💞️ I’m looking to collaborate with NVIDIA
 - 📫 How to reach me cyunchae@arcs.skku.edu
 
