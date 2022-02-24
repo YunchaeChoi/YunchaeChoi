@@ -2,13 +2,14 @@ set ruler
 set mouse=a
 set ts=4
 set cindent
-set smartindent
-set autoindent
 syntax on
 syntax enable
 set hlsearch
 set incsearch
 set nu
+set shiftwidth=4
+
+colorscheme uwu
 
 " cursor options 
 
@@ -41,21 +42,15 @@ filetype off                  " required
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
-" alternatively, pass a path where Vundle should install plugins
-"call vundle#begin('~/some/path/here')
- 
-" let Vundle manage Vundle, required
+
 Plugin 'VundleVim/Vundle.vim'
- 
-" Keep Plugin commands between vundle#begin/end.
- 
-" vim-airline
 Plugin 'The-NERD-Tree'
 Plugin 'Raimondi/delimitMate'
- 
-" All of your Plugins must be added before the following line
+
 call vundle#end()            " required
 filetype plugin indent on    " required
 
 
 let delimitMate_expand_cr=1
+
+nmap nerd :NERDTreeToggle<CR>
