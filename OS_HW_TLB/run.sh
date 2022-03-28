@@ -3,13 +3,13 @@
 echo '# x y' > time.data
 NUMPAGES=1
 sudo make
-while [ $NUMPAGES -le 2048 ] 
+while [ $NUMPAGES -le 8192 ] 
 do
 	echo NUMPAGES: $NUMPAGES
-	./tlb $NUMPAGES 100000 >> time.data
+	./tlb $NUMPAGES 10000 >> time.data
 	NUMPAGES=$[ $NUMPAGES * 2]
 done
 sudo make clean
-python3 ./make_graph.py
+python3 ./make_graph_pyplot.py 
 #rm time.data
-#wslview ./TLB_Measurement_Graph.pdf
+#wslview ./TLB_Measurement_graph.png

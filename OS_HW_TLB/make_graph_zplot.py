@@ -10,7 +10,7 @@ c = canvas(ctype, title='TLB_Measurement_Graph', dimensions=['3in', '2.4in'])
 t = table(file='time.data')
 
 # make a drawable region for a graph
-d = drawable(canvas=c, xrange=[0,2048], yrange=[0,0.01],
+d = drawable(canvas=c, xrange=[0,8192], yrange=[0,35],
              coord=['0.5in','0.4in'], dimensions=['2.3in','1.7in'])
 
 # make some axes
@@ -21,6 +21,7 @@ axis(drawable=d, title='TLB Size Measurement', xtitle='Number Of Pages',
 p = plotter()
 p.points(drawable=d, table=t, xfield='x', yfield='y', style='circle',
          linecolor='red', fill=True, fillcolor='red')
+p.line(drawable=d, table=t, xfield='x', yfield='y', linecolor='red', linejoin=1)
 
 # finally, output the graph to a file
 c.render()

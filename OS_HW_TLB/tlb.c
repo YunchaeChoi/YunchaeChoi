@@ -1,15 +1,18 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <stdint.h>
+//#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <errno.h>
 #include <sched.h>
 
+#define BILLION 1E9
 #define handle_error_en(en, msg) \
 	do { errno = en; perror(msg); exit(EXIT_FAILURE);} while(0)
+
 
 // how to view pdf file 
 // $ wslview <filename>.pdf
@@ -46,38 +49,34 @@ int main(int argc, char* argv[]) {
 	int PAGESIZE = getpagesize();
 	int jump = PAGESIZE / sizeof(int);
 	
-//	struct timespec begin, end;
 
 	int *a = (int*)calloc(PAGESIZE * NUMPAGES, sizeof(int));
 
-
-//	if( (clock_gettime(CLOCK_MONOTONIC,&begin)) == -1) {
-//		printf("clock_gettime error - begin\n");
-//		exit(EXIT_FAILURE);
-//	}
-
-	struct timeval begin, end;
-	gettimeofday(&begin, NULL);
+	struct timespec begin, end;
+	if( (clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&begin)) == -1) {
+		printf("clock_gettime error - begin\n");
+		exit(EXIT_FAILURE);
+	}
 
 	for(int j=0; j< trials; j++) {
 		for(int i=0; i< NUMPAGES * jump ; i += jump) {
 			a[i] += 1;
 		}
 	}
-	gettimeofday(&end, NULL);
-	float time_diff = end.tv_sec-begin.tv_sec + 1e-6*(end.tv_usec - begin.tv_usec);
 
-//	if( (clock_gettime(CLOCK_MONOTONIC, &end)) == -1 ) {
-//		printf("clock_gettime error - end\n");
-//		exit(EXIT_FAILURE);
-//	}
+	if( (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end)) == -1 ) {
+		printf("clock_gettime error - end\n");
+		exit(EXIT_FAILURE);
+	}
 	free(a);
+	
 
-	time_diff /= (float)trials;
-//	time = time / trials;
+	float diff_nanos = BILLION*(end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec);
+	diff_nanos /= (long)trials * (long)NUMPAGES ;
+
 //	printf("%ld ns elapsed\n",time);
 //	printf("%lf μs elapsed\n ",(double)time/1000); //micro
-	printf("%d %f\n",NUMPAGES,time_diff);
+	printf("%d %f\n",NUMPAGES,diff_nanos);
 
 	return 0;
 }
