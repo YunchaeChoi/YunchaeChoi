@@ -6,7 +6,7 @@ sudo make
 while [ $NUMPAGES -le 8192 ] 
 do
 	echo NUMPAGES: $NUMPAGES
-	./tlb $NUMPAGES 10000 >> time.data
+	./tlb $NUMPAGES 500000 >> time.data
 	NUMPAGES=$[ $NUMPAGES * 2]
 done
 sudo make clean
