@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 	int *a = (int*)calloc(PAGESIZE * NUMPAGES, sizeof(int));
 
 	struct timespec begin, end;
-	if( (clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&begin)) == -1) {
+	if( (clock_gettime(CLOCK_MONOTONIC,&begin)) == -1) {
 		printf("clock_gettime error - begin\n");
 		exit(EXIT_FAILURE);
 	}
@@ -64,15 +64,15 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	if( (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end)) == -1 ) {
+	if( (clock_gettime(CLOCK_MONOTONIC, &end)) == -1 ) {
 		printf("clock_gettime error - end\n");
 		exit(EXIT_FAILURE);
 	}
 	free(a);
-	
 
-	float diff_nanos = BILLION*(end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec);
-	diff_nanos /= (long)trials * (long)NUMPAGES ;
+
+	float diff_nanos = (BILLION*(end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) ) / (trials * NUMPAGES);
+//	diff_nanos /= (long)trials * (long)NUMPAGES ;
 
 //	printf("%ld ns elapsed\n",time);
 //	printf("%lf μs elapsed\n ",(double)time/1000); //micro
