@@ -1,5 +1,5 @@
 - 👋 Hi, I’m @YunchaeChoi
-- 👀 I’m interested in OS, parallel computing
+- 👀 I’m interested in Compiler, Parallel Computing, Machine Learning
 - 🌱 I’m currently learning OS, Automaton, Database... 
 - 💞️ I’m looking to collaborate with NVIDIA
 - 📫 How to reach me cyunchae@arcs.skku.edu
